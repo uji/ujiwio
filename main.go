@@ -3,7 +3,7 @@ package main
 import (
   "fmt"
 	_ "embed"
-  // "machine"
+  "machine"
   "time"
   "image/color"
   "bytes"
@@ -16,6 +16,9 @@ import (
 //go:embed name.png
 var name_png []byte
 
+//go:embed xqr.png
+var xqr_png []byte
+
 var (
 	black = color.RGBA{0, 0, 0, 255}
 	white = color.RGBA{255, 255, 255, 255}
@@ -24,11 +27,14 @@ var (
 	green = color.RGBA{0, 255, 0, 255}
 )
 
-var (
-	display *ili9341.Device
-)
+var display *ili9341.Device
+
+var button1 machine.Pin
 
 func main () {
+  button1 = machine.WIO_KEY_C
+	button1.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+
   display = initdisplay.InitDisplay()
 
 	width, height := display.Size()
@@ -42,6 +48,27 @@ func main () {
 	err = drawPng(display, name_png)
 	if err != nil {
     panic(err)
+	}
+
+	state := 0
+	for {
+		if !button1.Get() {
+			state = 1 - state
+			switch state {
+			case 0:
+				err = drawPng(display, name_png)
+				if err != nil {
+          panic(err)
+				}
+			default:
+				err = drawPng(display, xqr_png)
+				if err != nil {
+          panic(err)
+				}
+			}
+
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
