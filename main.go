@@ -1,12 +1,12 @@
 package main
 
 import (
-  "fmt"
+	"bytes"
 	_ "embed"
-  "machine"
-  "time"
-  "image/color"
-  "bytes"
+	"fmt"
+	"image/color"
+	"machine"
+	"time"
 
 	"tinygo.org/x/drivers/examples/ili9341/initdisplay"
 	"tinygo.org/x/drivers/ili9341"
@@ -18,6 +18,9 @@ var name_png []byte
 
 //go:embed xqr.png
 var xqr_png []byte
+
+//go:embed nah.png
+var nah_png []byte
 
 var (
 	black = color.RGBA{0, 0, 0, 255}
@@ -31,42 +34,51 @@ var display *ili9341.Device
 
 var button1 machine.Pin
 
-func main () {
-  button1 = machine.WIO_KEY_C
+func main() {
+	button1 = machine.WIO_KEY_C
 	button1.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 
-  display = initdisplay.InitDisplay()
+	display = initdisplay.InitDisplay()
 
 	width, height := display.Size()
 	if width < 320 || height < 240 {
 		display.SetRotation(ili9341.Rotation270)
 	}
 
-  display.FillScreen(black)
+	display.FillScreen(black)
 
 	var err error
 	err = drawPng(display, name_png)
 	if err != nil {
-    panic(err)
+		panic(err)
 	}
 
 	state := 0
 	for {
 		if !button1.Get() {
-			state = 1 - state
 			switch state {
 			case 0:
-				err = drawPng(display, name_png)
-				if err != nil {
-          panic(err)
-				}
-			default:
 				err = drawPng(display, xqr_png)
 				if err != nil {
-          panic(err)
+					panic(err)
+				}
+			case 1:
+				err = drawPng(display, nah_png)
+				if err != nil {
+					panic(err)
+				}
+			default:
+				err = drawPng(display, name_png)
+				if err != nil {
+					panic(err)
 				}
 			}
 
+			if state >= 2 {
+				state = 0
+			} else {
+				state++
+			}
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
